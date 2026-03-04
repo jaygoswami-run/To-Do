@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✦ Get It Done — Your Personal List</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #F5F0E8;
+    --ink: #1A1208;
+    --warm: #C8A96E;
+    --warm-light: #E8D9B8;
+    --accent: #D4603A;
+    --soft: #8B7355;
+    --done-bg: #EAE5DB;
+  }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px 80px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: repeating-linear-gradient(
+      0deg, transparent, transparent 39px,
+      rgba(200, 169, 110, 0.15) 39px,
+      rgba(200, 169, 110, 0.15) 40px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── WELCOME SCREEN ── */
+  #welcomeScreen {
+    position: fixed;
+    inset: 0;
+    background: var(--cream);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.5s ease both;
+  }
+
+  #welcomeScreen.hiding {
+    animation: fadeOut 0.5s ease both;
+    pointer-events: none;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+  .welcome-card {
+    background: #fff;
+    border: 1.5px solid var(--warm-light);
+    border-radius: 28px;
+    padding: 44px 40px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(200, 169, 110, 0.18);
+    animation: cardIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(28px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .welcome-icon {
+    font-size: 52px;
+    display: block;
+    margin-bottom: 18px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+  }
+
+  .welcome-card h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: var(--ink);
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  .welcome-card h2 em { font-style: italic; color: var(--accent); }
+
+  .welcome-card p {
+    font-size: 14px;
+    color: var(--soft);
+    margin-bottom: 30px;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .name-input-wrap { margin-bottom: 14px; }
+
+  .name-input-wrap input {
+    width: 100%;
+    border: 2px solid var(--warm-light);
+    border-radius: 14px;
+    padding: 15px 20px;
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--ink);
+    background: var(--cream);
+    outline: none;
+    text-align: center;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-style: italic;
+  }
+
+  .name-input-wrap input::placeholder {
+    color: #C4B89A;
+    font-style: italic;
+  }
+
+  .name-input-wrap input:focus {
+    border-color: var(--warm);
+    box-shadow: 0 0 0 4px rgba(200, 169, 110, 0.12);
+  }
+
+  .start-btn {
+    width: 100%;
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    border-radius: 14px;
+    padding: 15px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.05em;
+  }
+
+  .start-btn:hover { background: var(--accent); }
+  .start-btn:active { transform: scale(0.98); }
+
+  .skip-btn {
+    display: block;
+    margin-top: 13px;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #C4B89A;
+    cursor: pointer;
+    transition: color 0.2s;
+    letter-spacing: 0.03em;
+  }
+
+  .skip-btn:hover { color: var(--soft); }
+
+  /* ── MAIN APP ── */
+  .container {
+    width: 100%;
+    max-width: 560px;
+    position: relative;
+    z-index: 1;
+    animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .header { margin-bottom: 28px; }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+
+  .greeting {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(30px, 6vw, 48px);
+    line-height: 1.1;
+    color: var(--soft);
+    letter-spacing: -0.02em;
+    font-weight: 400;
+  }
+
+  .user-name-display {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 8vw, 58px);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.03em;
+    display: block;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .user-name-display em { font-style: italic; color: var(--accent); }
+
+  .subtitle {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--soft);
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    min-height: 20px;
+    transition: opacity 0.3s;
+  }
+
+  .header-meta {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .date-line {
+    font-size: 11px;
+    color: var(--warm);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .date-line::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--warm-light);
+  }
+
+  .rename-btn {
+    background: none;
+    border: 1px solid var(--warm-light);
+    border-radius: 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: var(--soft);
+    cursor: pointer;
+    padding: 4px 12px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  .rename-btn:hover { border-color: var(--warm); color: var(--ink); }
+
+  /* Motivational banner */
+  .motive-banner {
+    background: linear-gradient(135deg, var(--ink) 0%, #2D1F0A 100%);
+    border-radius: 14px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: opacity 0.4s, transform 0.4s;
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  .motive-banner.show { opacity: 1; transform: translateY(0); }
+  .motive-banner.gone { display: none; }
+
+  .motive-emoji { font-size: 22px; flex-shrink: 0; }
+
+  .motive-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--warm-light);
+    line-height: 1.5;
+  }
+
+  /* Progress */
+  .progress-label {
+    font-size: 12px;
+    color: var(--soft);
+    text-align: right;
+    margin-bottom: 6px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+
+  .progress-wrap {
+    background: var(--warm-light);
+    border-radius: 20px;
+    height: 6px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--warm), var(--accent));
+    border-radius: 20px;
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    width: 0%;
+  }
+
+  /* Input */
+  .input-area {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+    background: #fff;
+    border: 2px solid var(--warm-light);
+    border-radius: 16px;
+    padding: 6px 6px 6px 18px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .input-area:focus-within {
+    border-color: var(--warm);
+    box-shadow: 0 0 0 4px rgba(200, 169, 110, 0.12);
+  }
+
+  .input-area input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+  }
+
+  .input-area input::placeholder { color: #C4B89A; }
+
+  .add-btn {
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .add-btn:hover { background: var(--accent); }
+  .add-btn:active { transform: scale(0.97); }
+
+  /* Filters */
+  .filters { display: flex; gap: 6px; margin-bottom: 18px; }
+
+  .filter-btn {
+    border: 1px solid var(--warm-light);
+    background: transparent;
+    color: var(--soft);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+
+  .filter-btn:hover { border-color: var(--warm); color: var(--ink); }
+  .filter-btn.active { background: var(--ink); border-color: var(--ink); color: var(--cream); }
+
+  /* Tasks */
+  .task-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+  .task-item {
+    background: #fff;
+    border: 1.5px solid var(--warm-light);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: taskIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    position: relative;
+  }
+
+  @keyframes taskIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .task-item:hover {
+    border-color: var(--warm);
+    box-shadow: 0 4px 20px rgba(200, 169, 110, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .task-item.done { background: var(--done-bg); border-color: transparent; }
+  .task-item.done .task-text { text-decoration: line-through; color: #B0A090; }
+  .task-item.removing { animation: taskOut 0.3s ease both; }
+
+  @keyframes taskOut {
+    to { opacity: 0; transform: scale(0.95); height: 0; padding: 0; margin: 0; }
+  }
+
+  .check-wrap {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--warm-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .task-item.done .check-wrap { background: var(--accent); border-color: var(--accent); }
+  .check-wrap:hover { border-color: var(--accent); transform: scale(1.1); }
+
+  .check-icon {
+    opacity: 0; transform: scale(0);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: white; font-size: 13px;
+  }
+
+  .task-item.done .check-icon { opacity: 1; transform: scale(1); }
+
+  .task-text {
+    flex: 1; font-size: 15px; color: var(--ink);
+    transition: color 0.2s; line-height: 1.4;
+  }
+
+  .priority { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .priority.high { background: var(--accent); }
+  .priority.med { background: var(--warm); }
+  .priority.low { background: var(--warm-light); border: 1px solid var(--warm); }
+
+  .del-btn {
+    background: none; border: none;
+    color: #C4B89A; cursor: pointer;
+    padding: 4px; border-radius: 6px;
+    font-size: 16px; line-height: 1;
+    transition: color 0.2s, background 0.2s;
+    opacity: 0; flex-shrink: 0;
+  }
+
+  .task-item:hover .del-btn { opacity: 1; }
+  .del-btn:hover { color: var(--accent); background: rgba(212, 96, 58, 0.08); }
+
+  /* Empty */
+  .empty { text-align: center; padding: 48px 0; }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-family: 'Playfair Display', serif; font-size: 18px; font-style: italic; color: var(--soft); }
+  .empty span { font-size: 13px; color: #C4B89A; display: block; margin-top: 4px; }
+
+  /* Footer */
+  .footer { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; }
+  .count-text { font-size: 12px; color: var(--soft); letter-spacing: 0.05em; }
+
+  .clear-btn {
+    background: none; border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; color: #C4B89A;
+    cursor: pointer; letter-spacing: 0.05em;
+    transition: color 0.2s; padding: 4px 0;
+  }
+
+  .clear-btn:hover { color: var(--accent); }
+
+  /* Priority dots */
+  .priority-select {
+    display: flex; gap: 5px; align-items: center;
+    padding-right: 4px; border-right: 1px solid var(--warm-light);
+    margin-right: 4px;
+  }
+
+  .prio-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    cursor: pointer; transition: transform 0.15s;
+    border: 2px solid transparent;
+  }
+
+  .prio-dot:hover, .prio-dot.sel { transform: scale(1.3); }
+  .prio-dot.sel { border-color: var(--ink); }
+  .prio-dot.h { background: var(--accent); }
+  .prio-dot.m { background: var(--warm); }
+  .prio-dot.l { background: var(--warm-light); }
+
+  /* Confetti */
+  .confetti-wrap {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 200;
+    overflow: hidden; display: none;
+  }
+
+  .confetti-wrap.active { display: block; }
+
+  .confetti-piece {
+    position: absolute; border-radius: 2px;
+    animation: confettiFall 1.6s ease-in both;
+  }
+
+  @keyframes confettiFall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(600deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="confetti-wrap" id="confetti"></div>
+
+<!-- WELCOME SCREEN -->
+<div id="welcomeScreen">
+  <div class="welcome-card">
+    <span class="welcome-icon">✦</span>
+    <h2>Welcome to <em>Get It Done.</em></h2>
+    <p>Your personal space to stay on top of things.<br>First things first — what do we call you?</p>
+    <div class="name-input-wrap">
+      <input type="text" id="nameInput" placeholder="Your name…" maxlength="30" autocomplete="off" />
+    </div>
+    <button class="start-btn" onclick="startApp()">Make It Mine ✦</button>
+    <button class="skip-btn" onclick="startApp(true)">Skip for now</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="container" id="mainApp" style="visibility:hidden">
+  <div class="header">
+    <div class="badge">✦ Your personal list</div>
+    <div class="greeting" id="greetingEl"></div>
+    <span class="user-name-display" id="nameDisplay"></span>
+    <p class="subtitle" id="subtitleEl"></p>
+    <div class="header-meta">
+      <div class="date-line" id="dateLine"></div>
+      <button class="rename-btn" onclick="showWelcome()">✎ Change name</button>
+    </div>
+  </div>
+
+  <div class="motive-banner gone" id="motiveBanner">
+    <span class="motive-emoji" id="motiveEmoji">🌟</span>
+    <span class="motive-text" id="motiveText"></span>
+  </div>
+
+  <div class="progress-label" id="progressLabel"></div>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+
+  <div class="input-area">
+    <div class="priority-select">
+      <div class="prio-dot h sel" data-prio="high" onclick="selectPrio(this)" title="High priority"></div>
+      <div class="prio-dot m" data-prio="med" onclick="selectPrio(this)" title="Medium priority"></div>
+      <div class="prio-dot l" data-prio="low" onclick="selectPrio(this)" title="Low priority"></div>
+    </div>
+    <input type="text" id="taskInput" placeholder="Add something to do…" maxlength="120" />
+    <button class="add-btn" onclick="addTask()">+ Add</button>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all" onclick="setFilter(this)">All</button>
+    <button class="filter-btn" data-filter="active" onclick="setFilter(this)">To Do</button>
+    <button class="filter-btn" data-filter="done" onclick="setFilter(this)">Done</button>
+  </div>
+
+  <ul class="task-list" id="taskList"></ul>
+
+  <div class="footer">
+    <span class="count-text" id="countText"></span>
+    <button class="clear-btn" onclick="clearDone()">Clear completed</button>
+  </div>
+</div>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('done_tasks') || '[]');
+  let userName = localStorage.getItem('done_username') || '';
+  let filter = 'all';
+  let selectedPrio = 'high';
+  let allDoneShown = false;
+
+  const ws = document.getElementById('welcomeScreen');
+  const ni = document.getElementById('nameInput');
+  ni.addEventListener('keydown', e => { if (e.key === 'Enter') startApp(); });
+
+  function startApp(skip = false) {
+    const val = ni.value.trim();
+    if (!skip && val) {
+      userName = val;
+      localStorage.setItem('done_username', userName);
+    }
+    ws.classList.add('hiding');
+    setTimeout(() => {
+      ws.style.display = 'none';
+      document.getElementById('mainApp').style.visibility = 'visible';
+      initApp();
+    }, 500);
+  }
+
+  function showWelcome() {
+    ws.style.display = 'flex';
+    ws.classList.remove('hiding');
+    ni.value = userName;
+    setTimeout(() => ni.focus(), 100);
+  }
+
+  // Auto-skip if name already saved
+  if (userName) {
+    ws.style.display = 'none';
+    document.getElementById('mainApp').style.visibility = 'visible';
+    initApp();
+  } else {
+    setTimeout(() => ni.focus(), 600);
+  }
+
+  function save() { localStorage.setItem('done_tasks', JSON.stringify(tasks)); }
+
+  function getGreeting() {
+    const h = new Date().getHours();
+    if (h < 5)  return 'Burning midnight oil,';
+    if (h < 12) return 'Good morning,';
+    if (h < 17) return 'Good afternoon,';
+    if (h < 21) return 'Good evening,';
+    return 'Still at it,';
+  }
+
+  function getSubtitle(name, done, total) {
+    const n = name ? name.split(' ')[0] : 'friend';
+    if (total === 0) return `What's on your mind today, ${n}?`;
+    if (done === total) return `You crushed it, ${n}! Every task is done. 🎉`;
+    if (done === 0) return `${total} task${total > 1 ? 's' : ''} waiting, ${n}. You've got this!`;
+    return `${total - done} left to go, ${n}. Keep it up!`;
+  }
+
+  function getMotivation(name, done, total) {
+    const n = name ? name.split(' ')[0] : '';
+    if (total === 0 || done === 0) return null;
+    const pct = (done / total) * 100;
+    if (pct === 100) return { emoji: '🏆', text: `Every task done${n ? ', ' + n : ''}! You're absolutely unstoppable today.` };
+    if (pct >= 75)   return { emoji: '🔥', text: `Almost there${n ? ', ' + n : ''}! Just a few more to go.` };
+    if (pct >= 50)   return { emoji: '⚡', text: `Halfway through — great momentum${n ? ', ' + n : ''}!` };
+    if (pct >= 25)   return { emoji: '✨', text: `Nice start${n ? ', ' + n : ''}. Keep the energy going!` };
+    if (done === 1)  return { emoji: '🌱', text: `First one down${n ? ', ' + n : ''}. The ball is rolling!` };
+    return null;
+  }
+
+  function initApp() {
+    const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date();
+    document.getElementById('dateLine').textContent =
+      `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()} ${now.getFullYear()}`;
+
+    updatePersonalization();
+
+    if (tasks.length === 0) {
+      const fn = userName ? userName.split(' ')[0] : 'friend';
+      tasks = [
+        { id: 1, text: `Hey ${fn}! Tap the circle to complete a task ✓`, done: false, prio: 'high' },
+        { id: 2, text: 'Add your own task using the input above', done: false, prio: 'med' },
+        { id: 3, text: 'Use the 🔴🟡⚪ dots to set priority', done: false, prio: 'low' },
+      ];
+      save();
+    }
+
+    render();
+  }
+
+  function updatePersonalization() {
+    const display = userName || 'Friend';
+    document.getElementById('greetingEl').textContent = getGreeting();
+    document.getElementById('nameDisplay').innerHTML = display + '.';
+    document.title = `✦ ${display}'s List`;
+  }
+
+  function selectPrio(el) {
+    document.querySelectorAll('.prio-dot').forEach(d => d.classList.remove('sel'));
+    el.classList.add('sel');
+    selectedPrio = el.dataset.prio;
+  }
+
+  function addTask() {
+    const input = document.getElementById('taskInput');
+    const text = input.value.trim();
+    if (!text) { input.focus(); return; }
+    tasks.unshift({ id: Date.now(), text, done: false, prio: selectedPrio });
+    input.value = '';
+    save(); render();
+    input.focus();
+  }
+
+  document.getElementById('taskInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  function toggleTask(id) {
+    const t = tasks.find(t => t.id === id);
+    if (t) { t.done = !t.done; save(); render(); }
+  }
+
+  function deleteTask(id) {
+    const li = document.querySelector(`[data-id="${id}"]`);
+    if (li) {
+      li.classList.add('removing');
+      setTimeout(() => { tasks = tasks.filter(t => t.id !== id); save(); render(); }, 280);
+    }
+  }
+
+  function clearDone() {
+    tasks = tasks.filter(t => !t.done);
+    allDoneShown = false;
+    save(); render();
+  }
+
+  function setFilter(btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filter = btn.dataset.filter;
+    render();
+  }
+
+  function launchConfetti() {
+    const wrap = document.getElementById('confetti');
+    wrap.innerHTML = '';
+    wrap.classList.add('active');
+    const colors = ['#D4603A','#C8A96E','#1A1208','#E8D9B8','#8B7355','#F5F0E8'];
+    for (let i = 0; i < 70; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      const size = 5 + Math.random() * 9;
+      p.style.cssText = `
+        left:${Math.random()*100}%;
+        width:${size}px; height:${size}px;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        border-radius:${Math.random()>0.5?'50%':'3px'};
+        animation-delay:${Math.random()*1}s;
+        animation-duration:${1.4+Math.random()*0.8}s;
+      `;
+      wrap.appendChild(p);
+    }
+    setTimeout(() => { wrap.classList.remove('active'); wrap.innerHTML = ''; }, 3000);
+  }
+
+  function render() {
+    const list  = document.getElementById('taskList');
+    const total = tasks.length;
+    const done  = tasks.filter(t => t.done).length;
+
+    // Personalization
+    updatePersonalization();
+    document.getElementById('subtitleEl').textContent = getSubtitle(userName, done, total);
+
+    // Progress
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent =
+      total ? `${done} of ${total} task${total !== 1 ? 's' : ''} complete — ${pct}%` : 'No tasks yet';
+
+    // Motivation
+    const banner = document.getElementById('motiveBanner');
+    const motive = getMotivation(userName, done, total);
+    if (motive) {
+      document.getElementById('motiveEmoji').textContent = motive.emoji;
+      document.getElementById('motiveText').textContent  = motive.text;
+      banner.classList.remove('gone');
+      setTimeout(() => banner.classList.add('show'), 10);
+    } else {
+      banner.classList.remove('show');
+      setTimeout(() => banner.classList.add('gone'), 400);
+    }
+
+    // Confetti
+    if (total > 0 && done === total && !allDoneShown) {
+      allDoneShown = true;
+      launchConfetti();
+    }
+    if (done < total) allDoneShown = false;
+
+    // Count
+    document.getElementById('countText').textContent =
+      total ? `${total - done} remaining` : '';
+
+    // Filter
+    let visible = tasks;
+    if (filter === 'active') visible = tasks.filter(t => !t.done);
+    if (filter === 'done')   visible = tasks.filter(t => t.done);
+
+    if (visible.length === 0) {
+      const fn = userName ? userName.split(' ')[0] : 'you';
+      list.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">${filter==='done'?'🎯':'✦'}</div>
+          <p>${filter==='done'?`Nothing done yet, ${fn}.`:filter==='active'?`All clear, ${fn}! 🎉`:`The page is blank, ${fn}.`}</p>
+          <span>${filter==='all'?'Add something above to begin your day.':''}</span>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    visible.forEach((t, i) => {
+      const li = document.createElement('li');
+      li.className = 'task-item' + (t.done ? ' done' : '');
+      li.dataset.id = t.id;
+      li.style.animationDelay = `${i * 0.04}s`;
+      li.innerHTML = `
+        <div class="check-wrap" onclick="toggleTask(${t.id})">
+          <span class="check-icon">✓</span>
+        </div>
+        <span class="task-text">${esc(t.text)}</span>
+        <div class="priority ${t.prio||'med'}" title="${t.prio} priority"></div>
+        <button class="del-btn" onclick="deleteTask(${t.id})" title="Delete">×</button>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
